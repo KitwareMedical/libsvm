@@ -51,7 +51,26 @@ add_executable( svm-train svm-train.c svm.h svm.cpp )
 add_executable( svm-predict svm-predict.c svm.h svm.cpp )
 add_executable( svm-scale svm-scale.c svm.h svm.cpp )
 
+#
+# Implementation agnostic fPIC
+#
+set( CMAKE_POSITION_INDEPENDENT_CODE ON )
+
+# Append an item to a string if it does not already contain it.  Any additional
+# arguments are treated as extra "set" arguments
+macro( libsvm_append_if_absent VARNAME VALUE )
+  if( NOT ${VARNAME} MATCHES "(^| )${VALUE}($| )" )
+    if( ${VARNAME} )
+      set( ${VARNAME} "${${VARNAME}} ${VALUE}" ${ARGN} )
+    else()
+      set( ${VARNAME} "${VALUE}" ${ARGN} )
+    endif()
+  endif()
+endmacro()
+
 if( UNIX )
+  libsvm_append_if_absent( CMAKE_CXX_FLAGS "-fPIC" )
+  libsvm_append_if_absent( CMAKE_C_FLAGS "-fPIC" )
   set( SVM_MATH_LIBRARY m )
   target_link_libraries( svm-train ${SVM_MATH_LIBRARY} )
   target_link_libraries( svm-predict ${SVM_MATH_LIBRARY} )
@@ -60,7 +79,8 @@ endif( UNIX )
 
 add_library( svm svm.cpp )
 target_link_libraries( svm ${SVM_MATH_LIBRARY} )
-set_target_properties( svm PROPERTIES SOVERSION ${SVM_LIBRARY_SO_VERSION} VERSION ${SVM_VERSION} )
+set_target_properties( svm PROPERTIES SOVERSION ${SVM_LIBRARY_SO_VERSION}
+  VERSION ${SVM_VERSION} )
 
 install( TARGETS svm svm-train svm-predict svm-scale
   EXPORT ${SVM_TARGETS_NAME}
